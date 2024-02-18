@@ -7,6 +7,6 @@ int Sum(int a, int b) {
     } else if ((a == INT_MAX && b > 0) || (b == INT_MAX && a > 0)) {
         return INT_MAX;
     } else {
-        return a + b;
+        return (a + b);
     }
 }
