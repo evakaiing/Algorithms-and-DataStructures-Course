@@ -21,13 +21,18 @@ def error_processing(args):
 def concatenate(args):
     error_processing(args)
     with open(args.FILE, 'r', encoding="UTF-8") as file:
-        in_file = file.read()
-
-    current_size = os.path.getsize(args.FILE)
-    while current_size + len(in_file) * args.REPETITION <= args.MAXSIZE:
-        with open(args.FILE, 'a', encoding="UTF-8") as file:
-            file.write(in_file)
+        in_file = file.readline()
         current_size = os.path.getsize(args.FILE)
+        size = current_size
+
+    with open(args.FILE, 'a', encoding="UTF-8") as file:
+        for _ in range(args.REPETITION):
+            if current_size + size <= args.MAXSIZE:
+                file.write(in_file)
+                current_size += size
+            else:
+                open(args.FILE, 'w').close()
+                sys.exit(-1)
 
 
 def main():
