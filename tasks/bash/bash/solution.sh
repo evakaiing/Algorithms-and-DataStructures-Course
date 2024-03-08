@@ -18,9 +18,11 @@ if [ "$1" = "-h" ]; then
 fi
 
 
+
 FILE=$1
 REPETITIONS=$2
 MAXSIZE=$3
+
 
 
 if [ "$#" -lt 1 ]; then
@@ -28,9 +30,11 @@ if [ "$#" -lt 1 ]; then
   exit 1
 fi
 
+
 if [ $(wc -c < "$FILE") -eq 0 ]; then
   exit 1
 fi
+
 
 size=$(wc -c < "$FILE")
 in_file=$(cat "$FILE")
