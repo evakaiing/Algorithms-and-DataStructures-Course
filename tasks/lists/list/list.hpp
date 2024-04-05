@@ -19,7 +19,7 @@ private:
         friend class ListIterator;
         friend class List;
         Node() : data_(std::nullopt), next_(nullptr), previous_(nullptr){};
-        Node(const T& value) : data_(value), next_(nullptr), previous_(nullptr){};
+        explicit Node(const T& value) : data_(value), next_(nullptr), previous_(nullptr){};
 
     private:
         std::optional<T> data_ = typename std::optional<T>::value_type();
@@ -92,7 +92,7 @@ public:
         }
 
     private:
-        explicit ListIterator(Node* node_) : node_(node_){};
+        explicit ListIterator(Node* node) : node_(node){};
 
     private:
         Node* node_;
