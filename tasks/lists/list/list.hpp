@@ -124,6 +124,7 @@ public:
         tail_->next_ = tail_next_;
         tail_next_->previous_ = tail_;
     }
+
     List(const std::initializer_list<T>& values) {
         for (auto& elem : values) {
             this->PushBack(elem);
