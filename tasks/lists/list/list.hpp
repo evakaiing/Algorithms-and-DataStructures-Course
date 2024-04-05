@@ -203,7 +203,7 @@ public:
             ++pos;
         }
         if (current_node == nullptr) {
-            throw ElementNotFoundException("Element wasn't found");
+            return this->End();
         } else {
             return pos;
         }
