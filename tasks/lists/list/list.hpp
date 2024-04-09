@@ -120,6 +120,7 @@ public:
                 tail_->next_ = new_node;
                 tail_ = new_node;
             }
+            ++size_;
         }
         tail_->next_ = tail_next_;
         tail_next_->previous_ = tail_;
@@ -174,21 +175,15 @@ public:
     }
 
     inline size_t Size() const noexcept {
-        size_t count_elems = 0;
-        Node* current_node = head_;
-        if (current_node != nullptr) {
-            while (current_node != nullptr) {
-                ++count_elems;
-                current_node = current_node->next_;
-            }
-            return count_elems - 1;
-        }
-        return count_elems;
+        return size_;
     }
     void Swap(List& a) {
         Node* tmp_head = this->head_;
+        size_t tmp_size = this->size_;
         this->head_ = a.head_;
         a.head_ = tmp_head;
+        this->size_ = a.size_;
+        a.size_ = tmp_size;
 
         Node* tmp_tail = this->tail_;
         this->tail_ = a.tail_;
@@ -196,34 +191,39 @@ public:
     }
 
     ListIterator Find(const T& value) const {
-        Node* current_node = head_;
-        ListIterator pos(current_node);
-        while (current_node != nullptr && current_node->data_.value() != value) {
-            current_node = current_node->next_;
-            ++pos;
-        }
-        if (current_node == nullptr) {
-            return this->End();
+        if (head_ != nullptr) {
+            Node* current_node = head_;
+            ListIterator pos(current_node);
+            while (current_node != nullptr) {
+                if (current_node->data_.has_value() && current_node->data_.value() == value) {
+                    return pos;
+                }
+                current_node = current_node->next_;
+                ++pos;
+            }
         } else {
-            return pos;
+            throw ListIsEmptyException("List is empty");
         }
+        return this->End();
     }
 
     void Erase(ListIterator pos) {
         Node* node_in_current_pos = pos.GetNode();
         if (node_in_current_pos == nullptr) {
-            return;
+            throw ListIsEmptyException("List is empty");
+        }
+        if (this->Size() == 1) {
+            this->Clear();
         } else if (node_in_current_pos->next_ == nullptr) {  // tail
-            tail_ = node_in_current_pos->previous_;
-            tail_->next_ = nullptr;
+            this->PopBack();
         } else if (node_in_current_pos->previous_ == nullptr) {  // head
-            head_ = node_in_current_pos->next_;
-            head_->previous_ = nullptr;
+            this->PopFront();
         } else {
             node_in_current_pos->previous_->next_ = node_in_current_pos->next_;
             node_in_current_pos->next_->previous_ = node_in_current_pos->previous_;
+            --size_;
+            delete node_in_current_pos;
         }
-        delete node_in_current_pos;
     }
 
     void Insert(ListIterator pos, const T& value) {
@@ -254,6 +254,7 @@ public:
             node_in_current_pos->previous_->next_ = new_node;
             node_in_current_pos->previous_ = new_node;
         }
+        ++size_;
     }
 
     void Clear() noexcept {
@@ -270,6 +271,7 @@ public:
         tail_ = nullptr;
         delete tail_next_;
         tail_next_ = nullptr;
+        size_ = 0;
     }
 
     void PushBack(const T& value) {
@@ -286,11 +288,10 @@ public:
             tail_->next_ = new_node;
             new_node->previous_ = tail_;
             tail_ = new_node;
-            delete tail_next_;
-            tail_next_ = new Node;
             tail_->next_ = tail_next_;
             tail_next_->previous_ = tail_;
         }
+        ++size_;
     }
 
     void PushFront(const T& value) {
@@ -306,6 +307,7 @@ public:
             new_node->next_ = head_;
             head_ = new_node;
         }
+        ++size_;
     }
 
     void PopBack() {
@@ -327,6 +329,7 @@ public:
             tail_->next_ = tail_next_;
             tail_next_->previous_ = tail_;
         }
+        --size_;
     }
 
     void PopFront() {
@@ -344,6 +347,7 @@ public:
             delete head_->previous_;
             head_->previous_ = nullptr;
         }
+        --size_;
     }
 
     ~List() {
@@ -353,16 +357,20 @@ public:
             current_node = current_node->previous_;
             delete tmp_node;
         }
-        delete tail_next_;
+        if (tail_next_ != nullptr) {
+            delete tail_next_;
+        }
         head_ = nullptr;
         tail_ = nullptr;
         tail_next_ = nullptr;
+        size_ = 0;
     }
 
 private:
     Node* head_ = nullptr;
     Node* tail_ = nullptr;
     Node* tail_next_ = nullptr;
+    size_t size_ = 0;
 };
 
 namespace std {
