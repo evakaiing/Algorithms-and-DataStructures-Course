@@ -24,7 +24,6 @@ private:
 
 public:
     class ForwardListIterator {
-
         friend ForwardList;
 
     public:
