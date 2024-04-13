@@ -69,7 +69,7 @@ public:
         }
 
     private:
-        explicit ForwardListIterator(Node* current_node_) : current_node_(current_node_){};
+        explicit ForwardListIterator(Node* current_node) : current_node_(current_node){};
 
     private:
         Node* current_node_;
@@ -224,7 +224,7 @@ private:
 namespace std {
 // Global swap overloading
 template <typename T>
-void swap(ForwardList<T>& a, ForwardList<T>& b) {
+void Swap(ForwardList<T>& a, ForwardList<T>& b) {
     a.Swap(b);
 }
 }  // namespace std
