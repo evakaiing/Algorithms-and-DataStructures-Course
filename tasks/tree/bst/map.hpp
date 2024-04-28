@@ -44,7 +44,7 @@ private:
     };
 
 public:
-    Map() : root_(nullptr), size_(0), comp() {
+    Map() : root_(nullptr), size_(0), comp_() {
     }
 
     Value& operator[](const Key& key) {
@@ -71,7 +71,7 @@ public:
     }
 
     void Swap(Map& a) {
-        static_assert(std::is_same<decltype(this->comp), decltype(a.comp)>::value,
+        static_assert(std::is_same<decltype(this->comp_), decltype(a.comp_)>::value,
                       "The compare function types are different");
         Node* tmp_root = a.GetRoot();
         size_t tmp_size = a.Size();
@@ -131,7 +131,7 @@ public:
         }
         Node* current = root_;
         while (true) {
-            if (comp(val.first, current->key_)) {
+            if (comp_(val.first, current->key_)) {
                 if (current->left_ == nullptr) {
                     current->left_ = new Node(val);
                     ++size_;
@@ -164,11 +164,11 @@ public:
         // static bool in_recursion = false;
 
         while (current != nullptr) {
-            if (!comp(key, current->key_) && !comp(current->key_, key)) {
+            if (!comp_(key, current->key_) && !comp_(current->key_, key)) {
                 break;
             }
             parent = current;
-            if (comp(key, current->key_)) {
+            if (comp_(key, current->key_)) {
                 current = current->left_;
             } else {
                 current = current->right_;
@@ -266,7 +266,7 @@ public:
             if (current->key_ == key) {
                 return current;
             } else {
-                if (comp(key, current->key_)) {
+                if (comp_(key, current->key_)) {
                     current = current->left_;
                 } else {
                     current = current->right_;
@@ -286,7 +286,7 @@ public:
             if (current->key_ == key) {
                 return true;
             } else {
-                if (comp(key, current->key_)) {
+                if (comp_(key, current->key_)) {
                     current = current->left_;
                 } else {
                     current = current->right_;
@@ -304,12 +304,13 @@ public:
 private:
     Node* root_ = nullptr;
     size_t size_ = 0;
-    Compare comp;
+    Compare comp_;
 };
 
 namespace std {
 // Global swap overloading
 template <typename Key, typename Value>
+// NOLINTNEXTLINE
 void swap(Map<Key, Value>& a, Map<Key, Value>& b) {
     a.Swap(b);
 }
