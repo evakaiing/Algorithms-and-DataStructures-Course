@@ -5,6 +5,8 @@
 #include <memory>
 #include <utility>
 
+const size_t DEFAULT_CAPACITY = 10;
+
 template <typename T, typename Alloc = std::allocator<T>>
 class Vector {
 private:
@@ -88,7 +90,7 @@ private:
 public:
     Vector(){};
     explicit Vector(size_t count) {
-        this->Reserve(count > 10 ? count : 10);
+        this->Reserve(count > DEFAULT_CAPACITY ? count : DEFAULT_CAPACITY);
         size_ = count;
     }
 
@@ -111,7 +113,7 @@ public:
         }
         Alloc new_alloc = AllocTraits::propagate_on_container_copy_assignment::value ? other.alloc_ : alloc_;
         size_t i = 0;
-        T* new_arr = AllocTraits::allocate(new_alloc, other.cap_ > 10 ? other.cap_ : 10);
+        T* new_arr = AllocTraits::allocate(new_alloc, other.cap_ > DEFAULT_CAPACITY ? other.cap_ : DEFAULT_CAPACITY);
         try {
             for (; i < other.size_; ++i) {
                 AllocTraits::construct(new_alloc, new_arr + i, other.arr_[i]);
@@ -120,7 +122,7 @@ public:
             for (size_t j = 0; j < i; ++j) {
                 AllocTraits::destroy(new_alloc, new_arr + j);
             }
-            AllocTraits::deallocate(new_alloc, new_arr, other.cap_ > 10 ? other.cap_ : 10);
+            AllocTraits::deallocate(new_alloc, new_arr, other.cap_ > DEFAULT_CAPACITY ? other.cap_ : DEFAULT_CAPACITY);
             throw;
         }
         for (size_t i = 0; i < size_; ++i) {
@@ -151,7 +153,7 @@ public:
             return *this;
         }
         Alloc new_alloc = AllocTraits::propagate_on_container_move_assignment::value ? other.alloc_ : alloc_;
-        T* new_arr = AllocTraits::allocate(new_alloc, other.cap_ > 10 ? other.cap_ : 10);
+        T* new_arr = AllocTraits::allocate(new_alloc, other.cap_ > DEFAULT_CAPACITY ? other.cap_ : DEFAULT_CAPACITY);
         size_t i = 0;
         try {
             for (; i < other.size_; ++i) {
@@ -161,7 +163,7 @@ public:
             for (size_t j = 0; j < i; ++j) {
                 AllocTraits::destroy(new_alloc, new_arr + j);
             }
-            AllocTraits::deallocate(new_alloc, new_arr, other.cap_ > 10 ? other.cap_ : 10);
+            AllocTraits::deallocate(new_alloc, new_arr, other.cap_ > DEFAULT_CAPACITY ? other.cap_ : DEFAULT_CAPACITY);
             throw;
         }
         for (size_t i = 0; i < size_; ++i) {
@@ -176,7 +178,7 @@ public:
     }
 
     Vector(std::initializer_list<T> init) {
-        this->Reserve(init.size() > 10 ? init.size() : 10);
+        this->Reserve(init.size() > DEFAULT_CAPACITY ? init.size() : DEFAULT_CAPACITY);
         for (auto&& elem : init) {
             this->PushBack(elem);
         }
@@ -295,7 +297,7 @@ public:
     template <class... Args>  // переменное количество шаблонных аргументов
     void EmplaceBack(Args&&... args) {
         if (cap_ == size_) {
-            Reserve(cap_ > 0 ? cap_ * 2 : 10);
+            Reserve(cap_ > 0 ? cap_ * 2 : DEFAULT_CAPACITY);
         }
         AllocTraits::construct(alloc_, arr_ + size_, std::forward<Args>(args)...);
         ++size_;
@@ -338,7 +340,7 @@ class Vector<void*, std::allocator<void*>> {
 public:
     Vector(){};
     Vector& operator=(const Vector& other) {
-        this->Reserve(other.size_ > 10 ? other.size_ : 10);
+        this->Reserve(other.size_ > DEFAULT_CAPACITY ? other.size_ : DEFAULT_CAPACITY);
         for (size_t i = 0; i < other.size_; ++i) {
             arr_[i] = other.arr_[i];
         }
@@ -396,7 +398,7 @@ public:
 
     void PushBack(void* ptr) {
         if (size_ == cap_) {
-            this->Reserve(cap_ > 0 ? cap_ * 2 : 10);
+            this->Reserve(cap_ > 0 ? cap_ * 2 : DEFAULT_CAPACITY);
         }
         arr_[size_] = ptr;
         ++size_;
