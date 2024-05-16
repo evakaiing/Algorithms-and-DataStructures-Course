@@ -81,13 +81,13 @@ private:
 
     private:
         T* ptr_;
-        VectorIterator(T* ptr) : ptr_(ptr) {
+        explicit VectorIterator(T* ptr) : ptr_(ptr) {
         }
     };
 
 public:
     Vector(){};
-    Vector(size_t count) {
+    explicit Vector(size_t count) {
         this->Reserve(count > 10 ? count : 10);
         size_ = count;
     }
