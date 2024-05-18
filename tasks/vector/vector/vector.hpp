@@ -1,9 +1,9 @@
 #pragma once
 
-#include <compare>
 #include <initializer_list>
-#include <memory>
 #include <utility>
+#include <memory>
+#include <compare>
 
 template <typename T, typename Alloc = std::allocator<T>>
 class Vector {
@@ -21,17 +21,40 @@ private:
         // NOLINTNEXTLINE
         using reference_type = value_type&;
         // NOLINTNEXTLINE
-        using iterator_category = std::contiguous_iterator_tag;
+        using iterator_category = std::random_access_iterator_tag; // contiguous 
         // NOLINTNEXTLINE
         using difference_type = std::ptrdiff_t;
 
-        VectorIterator(const VectorIterator&) : ptr_(nullptr){};
-
+        VectorIterator(const VectorIterator&): ptr_(nullptr) {};
         VectorIterator& operator=(const VectorIterator& other) {
             if (this != &other) {
                 ptr_ = other.ptr_;
             }
             return *this;
+        }
+
+        inline bool operator!=(const VectorIterator& other) const {
+            return ptr_ != other.ptr_;
+        }
+
+        inline bool operator==(const VectorIterator& other) const {
+            return ptr_ == other.ptr_;
+        }
+        
+        inline bool operator>(const VectorIterator& other) const {
+            return (ptr_ > other.ptr_);
+        }
+
+        inline bool operator<(const VectorIterator& other) const {
+            return (ptr_ < other.ptr_);
+        }
+
+        inline bool operator>=(const VectorIterator& other) const {
+            return (ptr_ >= other.ptr_);
+        }
+
+        inline bool operator<=(const VectorIterator& other) const {
+            return (ptr_ <= other.ptr_);
         }
 
         reference_type operator*() const {
@@ -79,29 +102,44 @@ private:
             return (VectorIterator(ptr_ + other));
         }
 
+
     private:
         T* ptr_;
-        explicit VectorIterator(T* ptr) : ptr_(ptr) {
-        }
+        VectorIterator(T* ptr): ptr_(ptr) {}
     };
-
 public:
-    Vector(){};
-    explicit Vector(size_t count) {
-        this->Reserve(count > 10 ? count : 10);
+    Vector() {};
+    Vector(Alloc alloc) : alloc_(AllocTraits::select_on_container_copy_construction(alloc)) {};
+    Vector(size_t count) {
+        Reserve(count > 10 ? count : 10);
+        arr_ = AllocTraits::allocate(alloc_, cap_);
         size_ = count;
+        // try {
+        //     for (size_t i = 0; i < count; ++i) {
+        //         EmplaceBack(T());
+        //     }
+        // } catch(...) {
+        //     Clear();
+        //     AllocTraits::deallocate(alloc_, arr_, count > 10 ? count : 10);
+        // }
     }
 
-    Vector(size_t count, const T& value) : Vector(count) {
+    Vector(size_t count, const T& value): Vector(count) {
+        // Reserve(count > 10 ? count : 10);
         for (size_t i = 0; i < count; ++i) {
             AllocTraits::construct(alloc_, arr_ + i, value);
         }
     }
 
-    Vector(const Vector& other) : Vector(other.size_) {
-        alloc_ = AllocTraits::select_on_container_copy_construction(other.alloc_);
-        for (size_t i = 0; i < other.size_; ++i) {
-            AllocTraits::construct(alloc_, arr_ + i, other.arr_[i]);
+    Vector(const Vector& other): Vector(other.alloc_) {
+        Reserve(other.size_ > 10 ? other.size_ : 10);
+        try {
+            for (size_t i = 0; i < other.size_; ++i) {
+                EmplaceBack(other.arr_[i]);
+            }
+        } catch(...) {
+            Clear();
+            AllocTraits::deallocate(alloc_, arr_, other.size_ > 10 ? other.size_ : 10);
         }
     }
 
@@ -109,44 +147,43 @@ public:
         if (this == &other) {
             return *this;
         }
-        Alloc new_alloc = AllocTraits::propagate_on_container_copy_assignment::value ? other.alloc_ : alloc_;
+        Alloc newalloc = AllocTraits::propagate_on_container_copy_assignment::value 
+            ? other.alloc_ : alloc_;
         size_t i = 0;
-        T* new_arr = AllocTraits::allocate(new_alloc, other.cap_ > 10 ? other.cap_ : 10);
+        T* newarr = AllocTraits::allocate(newalloc, other.cap_ > 10 ? other.cap_ : 10); 
         try {
             for (; i < other.size_; ++i) {
-                AllocTraits::construct(new_alloc, new_arr + i, other.arr_[i]);
+                AllocTraits::construct(newalloc, newarr + i, other.arr_[i]);
             }
         } catch (...) {
             for (size_t j = 0; j < i; ++j) {
-                AllocTraits::destroy(new_alloc, new_arr + j);
+                AllocTraits::destroy(newalloc, newarr + j);
             }
-            AllocTraits::deallocate(new_alloc, new_arr, other.cap_ > 10 ? other.cap_ : 10);
+            AllocTraits::deallocate(newalloc, newarr, other.cap_ > 10 ? other.cap_ : 10);
             throw;
         }
-        for (size_t i = 0; i < size_; ++i) {
-            AllocTraits::destroy(alloc_, arr_ + i);
-        }
+        Clear();
         AllocTraits::deallocate(alloc_, arr_, cap_);
 
-        arr_ = new_arr;
+        alloc_ = newalloc; // no throw
+        arr_ = newarr;
         size_ = other.size_;
-        cap_ = other.cap_;
-        alloc_ = new_alloc;  // no throw
+        cap_ = other.cap_ > 10 ? other.cap_ : 10;
 
         return *this;
     }
 
-    Vector(Vector&& other) noexcept {
-        this->Clear();
-        alloc_ = AllocTraits::select_on_container_copy_construction(other.alloc_);
+
+
+
+    Vector(Vector&& other): alloc_(std::move(other.alloc_)) {
         std::swap(arr_, other.arr_);
         std::swap(cap_, other.cap_);
         std::swap(size_, other.size_);
     }
 
     // для использования std::move
-    Vector& operator=(
-        Vector&& other) {  // move-семантика  принимает r-value ссылку на другой объект  и возвращает l-value
+    Vector& operator=(Vector&& other) { // move-семантика  принимает r-value ссылку на другой объект  и возвращает l-value
         if (this == &other) {
             return *this;
         }
@@ -154,7 +191,7 @@ public:
         T* new_arr = AllocTraits::allocate(new_alloc, other.cap_ > 10 ? other.cap_ : 10);
         size_t i = 0;
         try {
-            for (; i < other.size_; ++i) {
+            for (; i< other.size_; ++i) {
                 AllocTraits::construct(new_alloc, new_arr + i, std::move_if_noexcept(other.arr_[i]));
             }
         } catch (...) {
@@ -164,21 +201,20 @@ public:
             AllocTraits::deallocate(new_alloc, new_arr, other.cap_ > 10 ? other.cap_ : 10);
             throw;
         }
-        for (size_t i = 0; i < size_; ++i) {
-            AllocTraits::destroy(alloc_, arr_ + i);
-        }
+        Clear();
         AllocTraits::deallocate(alloc_, arr_, cap_);
-        arr_ = new_arr;
-        cap_ = other.cap_;
+        cap_ = other.cap_ > 10 ? other.cap_ : 10;
         size_ = other.size_;
         other.Clear();
+        other.size_ = 0;
+        arr_ = new_arr;
         return *this;
     }
 
     Vector(std::initializer_list<T> init) {
         this->Reserve(init.size() > 10 ? init.size() : 10);
         for (auto&& elem : init) {
-            this->PushBack(elem);
+            this -> PushBack(elem);
         }
     }
 
@@ -194,15 +230,28 @@ public:
         return arr_[pos];
     }
 
-    T& Front() const noexcept {
+    const T& Front() const noexcept {
         return arr_[0];
     }
 
-    T& Back() const noexcept {
+    T& Front() noexcept {
+        return arr_[0];
+    }
+
+    const T& Back() const noexcept {
         return arr_[size_ - 1];
     }
 
-    T* Data() const noexcept {
+
+    T& Back() noexcept {
+        return arr_[size_ - 1];
+    }
+
+    const T* Data() const noexcept {
+        return arr_;
+    }
+
+    T* Data() noexcept {
         return arr_;
     }
 
@@ -223,9 +272,9 @@ public:
             return;
         }
         T* new_arr = AllocTraits::allocate(alloc_, new_cap);
-
+        
         size_t i = 0;
-
+        
         try {
             for (; i < size_; ++i) {
                 // new (newarr + i) T(arr[i]);+++
@@ -238,10 +287,14 @@ public:
             AllocTraits::deallocate(alloc_, new_arr, new_cap);
             throw;
         }
-        AllocTraits::deallocate(alloc_, arr_, cap_);
+        if (arr_) {
+            AllocTraits::deallocate(alloc_, arr_, cap_);
+        }
         arr_ = new_arr;
         cap_ = new_cap;
     }
+
+
 
     void Clear() noexcept {
         if (size_ == 0) {
@@ -253,15 +306,15 @@ public:
         size_ = 0;
     }
 
-    void Insert(size_t pos, T value) {  // insert before pos
+    void Insert(size_t pos, T value) { // insert before pos
         if (pos > size_ + 1) {
             return;
         }
         if (pos < 0) {
             return;
-        }
+        }       
         if (size_ + 1 > cap_) {
-            this->Reserve(size_ * 2);
+            this -> Reserve(size_ * 2);
         }
         for (size_t i = size_; i > pos; --i) {
             arr_[i] = arr_[i - 1];
@@ -284,20 +337,25 @@ public:
         size_ -= num_to_erase;
     }
 
+
     void PushBack(const T& value) {
         this->EmplaceBack(value);
     }
 
     void PushBack(T&& value) {
-        this->EmplaceBack(std::move(value));
+        this->EmplaceBack(std::move(value));    
     }
 
-    template <class... Args>  // переменное количество шаблонных аргументов
+    template <class... Args> // переменное количество шаблонных аргументов
     void EmplaceBack(Args&&... args) {
         if (cap_ == size_) {
             Reserve(cap_ > 0 ? cap_ * 2 : 10);
         }
-        AllocTraits::construct(alloc_, arr_ + size_, std::forward<Args>(args)...);
+        try {
+            AllocTraits::construct(alloc_, arr_ + size_, std::forward<Args>(args)...);
+        } catch(...) {
+            throw;
+        }
         ++size_;
     }
 
@@ -309,7 +367,7 @@ public:
 
     void Resize(size_t count, const T& value = T()) {
         if (count > cap_) {
-            this->Reserve(count);
+            this -> Reserve(count);
         }
         for (size_t i = size_; i < count; ++i) {
             AllocTraits::construct(alloc_, arr_ + i, value);
@@ -318,98 +376,99 @@ public:
     }
 
     ~Vector() {
-        for (size_t i = 0; i < size_; ++i) {
-            AllocTraits::destroy(alloc_, arr_ + i);
-        }
+        Clear();
         AllocTraits::deallocate(alloc_, arr_, cap_);
     }
 
 private:
+    using AllocTraits = std::allocator_traits<Alloc>;
     T* arr_ = nullptr;
     size_t size_ = 0;
     size_t cap_ = 0;
-    Alloc alloc_;
-
-    using AllocTraits = std::allocator_traits<Alloc>;
+    Alloc alloc_ = Alloc();
 };
+
+
 
 template <>
 class Vector<void*, std::allocator<void*>> {
 public:
-    Vector(){};
+    Vector() : arr_(nullptr), sz_(0u), cap_(0u) {
+        // NOLINTNEXTLINE
+    }
+
     Vector& operator=(const Vector& other) {
-        this->Reserve(other.size_ > 10 ? other.size_ : 10);
-        for (size_t i = 0; i < other.size_; ++i) {
-            arr_[i] = other.arr_[i];
+        Reserve(other.sz_);
+        Clear();
+        for (size_t index = 0u; index < other.sz_; ++index) {
+            arr_[index] = other.arr_[index];
         }
         return *this;
     }
 
     Vector& operator=(Vector&& other) {
-        cap_ = other.cap_;
-        size_ = other.size_;
-        other.size_ = 0;
-        arr_ = other.arr_;
+        Clear();
+        std::swap(arr_, other.arr_);
+        std::swap(sz_, other.sz_);
+        std::swap(cap_, other.cap_);
         return *this;
     }
 
-    void* Front() const {
-        return arr_[0];
+    size_t Size() const noexcept {
+        return sz_;
     }
 
-    void* Back() const {
-        return arr_[size_ - 1];
-    }
-
-    size_t Size() const {
-        return size_;
-    }
-
-    bool IsEmpty() const {
-        return (size_ == 0);
-    }
-
-    void Reserve(size_t new_cap) {
-        if (new_cap <= cap_) {
-            return;
-        }
-        void** new_arr = reinterpret_cast<void**>(malloc(new_cap * sizeof(void*)));
-        for (size_t i = 0; i < size_; ++i) {
-            new (new_arr + i) void*(arr_[i]);
-        }
-        free(arr_);
-        cap_ = new_cap;
-        arr_ = new_arr;
-    }
-
-    void Clear() noexcept {
-        if (size_ == 0) {
-            return;
-        }
-        for (size_t i = 0; i < size_; ++i) {
-            if (arr_[i]) {
-                free(arr_[i]);
-            }
-        }
-        size_ = 0;
+    bool IsEmpty() const noexcept {
+        return sz_ == 0u;
     }
 
     void PushBack(void* ptr) {
-        if (size_ == cap_) {
-            this->Reserve(cap_ > 0 ? cap_ * 2 : 10);
+        if (sz_ == cap_) {
+            // NOLINTNEXTLINE
+            Reserve(cap_ > 0 ? cap_ * 2 : 10u);
         }
-        arr_[size_] = ptr;
-        ++size_;
+        arr_[sz_] = ptr;
+        ++sz_;
+    }
+
+    void* Front() const {
+        return arr_[0u];
+    }
+
+    void* Back() const {
+        return arr_[sz_ - 1u];
+    }
+
+    void Reserve(std::size_t newsz) {
+        if (newsz <= cap_) {
+            return;
+        }
+        std::size_t index = 0u;
+        void** newarr = static_cast<void**>(malloc(newsz * sizeof(void*)));
+        for (; index < sz_; ++index) {
+            new (newarr + index) void*(arr_[index]);
+        }
+        free(arr_);
+        cap_ = newsz;
+        arr_ = newarr;
+    }
+
+    void Clear() noexcept {
+        for (size_t index = 0; index < sz_; ++index) {
+            if (arr_[index]) {
+                free(arr_[index]);
+            }
+        }
+        sz_ = 0u;
     }
 
     ~Vector() noexcept {
         Clear();
         free(arr_);
-        arr_ = nullptr;
     }
 
 private:
-    void** arr_ = nullptr;
-    size_t size_ = 0;
-    size_t cap_ = 0;
+    void** arr_;
+    size_t sz_;
+    size_t cap_;
 };
