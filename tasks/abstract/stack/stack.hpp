@@ -23,52 +23,52 @@ class Stack {
 public:
     Stack(){};
 
-    explicit Stack(const Container& cont) : container(cont){};
+    explicit Stack(const Container& cont) : container_(cont){};
 
-    explicit Stack(Container&& cont) : container(std::move(cont)){};
+    explicit Stack(Container&& cont) : container_(std::move(cont)){};
 
-    Stack(const Stack& other) : container(other.container){};
+    Stack(const Stack& other) : container_(other.container_){};
 
-    Stack(Stack&& other) : container(std::move(other.container)){};
+    Stack(Stack&& other) : container_(std::move(other.container_)){};
 
     Stack& operator=(const Stack& other) {
-        this->container = other.container;
+        this->container_ = other.container_;
         return *this;
     }
 
     Stack& operator=(Stack&& other) {
-        this->container = std::move(other.container);
+        this->container_ = std::move(other.container_);
         return *this;
     }
 
     void Push(const T& value) {
-        container.push_back(value);
+        container_.push_back(value);
     }
 
     void Pop() {
-        if (container.empty()) {
+        if (container_.empty()) {
             throw StackIsEmptyException("");
         }
-        container.pop_back();
+        container_.pop_back();
     }
 
     T& Top() {
-        if (!container.empty()) {
-            return container.back();
+        if (!container_.empty()) {
+            return container_.back();
         }
         throw StackIsEmptyException("");
     }
 
     bool Empty() const {
-        return container.empty();
+        return container_.empty();
     }
 
     size_t Size() const {
-        return container.size();
+        return container_.size();
     }
 
     ~Stack() = default;
 
 private:
-    Container container;
+    Container container_;
 };
