@@ -1,5 +1,6 @@
 #pragma once
 
+
 #include <deque>
 #include <exception>
 #include <string>
@@ -16,6 +17,7 @@ public:
 private:
     std::string_view error_message_;
 };
+
 
 template <typename T, typename Container = std::deque<T>>
 
@@ -71,6 +73,9 @@ public:
 
     ~Queue() = default;
 
+
 private:
     Container container_;
 };
+
+// a
