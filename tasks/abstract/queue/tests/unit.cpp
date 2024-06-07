@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "../Queue.hpp"
+#include "../queue.hpp"
 #include <fmt/core.h>
 #include <deque>
 #include <vector>
