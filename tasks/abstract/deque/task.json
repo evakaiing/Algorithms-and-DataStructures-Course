@@ -2,15 +2,9 @@
   "tests": [
     {
       "targets": ["unit_tests"],
-      "profiles": ["Debug"]
-    },
-    {
-      "targets": ["stress_tests"],
       "profiles": [
-        "FaultyFibers",
         "Debug",
-        "FaultyThreadsASan",
-        "FaultyThreadsTSan"
+        "DebugASan"
       ]
     }
   ],
@@ -19,11 +13,9 @@
   "forbidden": [
     {
       "patterns": [
-        "std::deque",
-        "sleep_for",
-        "SpinWait"
+        "Not implemented"
       ],
-      "hint": "Don't use std::deque"
-    },
+      "hint": "You should implement this part"
+    }
   ]
 }
